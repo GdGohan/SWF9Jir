@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ruffle Game Loader Virtual Folder</title>
+<title>Ruffle Game Loader</title>
 <style>
 body, html {
     margin: 0;
@@ -27,7 +27,7 @@ body, html {
     z-index: 10;
 }
 
-button, label, input[type="text"] {
+button, label {
     padding: 10px 14px;
     border-radius: 6px;
     background: #333;
@@ -49,13 +49,18 @@ input[type="file"] { display: none; }
     overflow: auto;
 }
 
-#player {
+#playerWrapper {
     width: 100%;
     max-width: 100%;
     aspect-ratio: 16/9;
-    background: #000;
     position: relative;
     z-index: 5;
+}
+
+#player {
+    width: 100%;
+    height: 100%;
+    background: #000;
 }
 
 /* Bordas */
@@ -98,8 +103,6 @@ input[type="file"] { display: none; }
     <label for="complementaryPicker">Add Complementary Files</label>
     <input type="file" id="complementaryPicker" multiple>
 
-    <input type="text" id="virtualFolderName" placeholder="Virtual folder name (optional)">
-
     <button id="loadSwf">Load SWF</button>
 </div>
 
@@ -109,7 +112,9 @@ input[type="file"] { display: none; }
     <div id="top-border" class="border"></div>
     <div id="bottom-border" class="border"></div>
 
-    <div id="player"></div>
+    <div id="playerWrapper">
+        <div id="player"></div>
+    </div>
 </div>
 
 <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
@@ -119,12 +124,11 @@ input[type="file"] { display: none; }
 document.addEventListener("DOMContentLoaded", function() {
     const mainSwfInput = document.getElementById("mainSwfPicker");
     const compInput = document.getElementById("complementaryPicker");
-    const folderInput = document.getElementById("virtualFolderName");
     const loadButton = document.getElementById("loadSwf");
-    const playerContainer = document.getElementById("player");
+    const playerWrapper = document.getElementById("playerWrapper");
 
     let mainSwfBuffer = null;
-    let filesMap = {};  // "virtualFolder/filename" → ArrayBuffer
+    let filesMap = {};
     let blobCache = {};
 
     // Configuração do Ruffle
@@ -133,12 +137,10 @@ document.addEventListener("DOMContentLoaded", function() {
         allowScriptAccess: true,
         menu: false,
         logLevel: "warn",
-        playerRuntime: "air",
+        playerRuntime: "flashPlayer",
         maxExecutionDuration: 120
     };
     const ruffle = window.RufflePlayer.newest();
-    let rufflePlayer = ruffle.createPlayer();
-    playerContainer.appendChild(rufflePlayer);
 
     // Seleciona SWF principal
     mainSwfInput.addEventListener("change", async (e) => {
@@ -148,22 +150,17 @@ document.addEventListener("DOMContentLoaded", function() {
         alert(`Main SWF loaded: ${file.name}`);
     });
 
-    // Seleciona complementares e armazena na pasta virtual
+    // Seleciona complementares
     compInput.addEventListener("change", async (e) => {
         const files = Array.from(e.target.files);
-        const folderName = folderInput.value.trim();
         for (const file of files) {
             const buffer = await file.arrayBuffer();
-            const path = folderName ? `${folderName}/${file.name}` : file.name;
-            filesMap[path] = buffer;
-
-            // também cria alias sem pasta, para compatibilidade
-            if (folderName) filesMap[file.name] = buffer;
+            // Salva no filesMap com caminho exato que o SWF espera
+            filesMap[`data/${file.name}`] = buffer;
         }
         alert(`Complementary files added: ${files.length}`);
     });
 
-    // Virtual loader para o SWF acessar arquivos na memória
     function virtualLoader(path) {
         const key = Object.keys(filesMap).find(k => k.endsWith(path));
         if (!key) return null;
@@ -171,7 +168,6 @@ document.addEventListener("DOMContentLoaded", function() {
         return blobCache[key];
     }
 
-    // Monkey-patch do fetch
     function patchFetch() {
         const originalFetch = window.fetch;
         window.fetch = async function(resource, ...args) {
@@ -185,9 +181,9 @@ document.addEventListener("DOMContentLoaded", function() {
     loadButton.addEventListener("click", () => {
         if (!mainSwfBuffer) { alert("Please select the main SWF first!"); return; }
 
-        playerContainer.innerHTML = "";
-        rufflePlayer = ruffle.createPlayer();
-        playerContainer.appendChild(rufflePlayer);
+        playerWrapper.innerHTML = "";
+        const rufflePlayer = ruffle.createPlayer();
+        playerWrapper.appendChild(rufflePlayer);
 
         patchFetch();
 
