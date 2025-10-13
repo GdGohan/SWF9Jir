@@ -9,6 +9,7 @@ body, html {
     margin: 0;
     padding: 0;
     width: 100%;
+    height: 100%;
     background: black;
     font-family: sans-serif;
 }
@@ -20,7 +21,7 @@ body, html {
     align-items: center;
     gap: 10px;
     padding: 10px;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.85);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -41,10 +42,11 @@ input[type="file"] { display: none; }
 #container {
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
     position: relative;
     width: 100%;
-    margin-top: 10px;
+    flex: 1;
+    overflow: auto;
 }
 
 #player {
@@ -56,7 +58,7 @@ input[type="file"] { display: none; }
     z-index: 5;
 }
 
-/* Bordas ajustadas para acompanhar o player */
+/* Bordas */
 .border {
     position: absolute;
     z-index: 1;
@@ -96,7 +98,7 @@ input[type="file"] { display: none; }
     <label for="complementaryPicker">Add Complementary Files</label>
     <input type="file" id="complementaryPicker" multiple>
 
-    <input type="text" id="virtualFolderName" placeholder="Virtual folder name" />
+    <input type="text" id="virtualFolderName" placeholder="Virtual folder name (optional)">
 
     <button id="loadSwf">Load SWF</button>
 </div>
@@ -125,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function() {
     let filesMap = {};  // "virtualFolder/filename" → ArrayBuffer
     let blobCache = {};
 
-    // Ruffle config
+    // Configuração do Ruffle
     window.RufflePlayer = window.RufflePlayer || {};
     window.RufflePlayer.config = {
         allowScriptAccess: true,
@@ -148,19 +150,20 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Seleciona complementares e armazena na pasta virtual
     compInput.addEventListener("change", async (e) => {
-        const folderName = folderInput.value.trim();
-        if (!folderName) { alert("Please enter a virtual folder name"); return; }
-
         const files = Array.from(e.target.files);
+        const folderName = folderInput.value.trim();
         for (const file of files) {
             const buffer = await file.arrayBuffer();
-            const path = `${folderName}/${file.name}`;
+            const path = folderName ? `${folderName}/${file.name}` : file.name;
             filesMap[path] = buffer;
+
+            // também cria alias sem pasta, para compatibilidade
+            if (folderName) filesMap[file.name] = buffer;
         }
-        alert(`Complementary files added to folder "${folderName}": ${files.length}`);
+        alert(`Complementary files added: ${files.length}`);
     });
 
-    // Virtual loader
+    // Virtual loader para o SWF acessar arquivos na memória
     function virtualLoader(path) {
         const key = Object.keys(filesMap).find(k => k.endsWith(path));
         if (!key) return null;
@@ -168,7 +171,7 @@ document.addEventListener("DOMContentLoaded", function() {
         return blobCache[key];
     }
 
-    // Intercepta fetch do SWF
+    // Monkey-patch do fetch
     function patchFetch() {
         const originalFetch = window.fetch;
         window.fetch = async function(resource, ...args) {
@@ -178,6 +181,7 @@ document.addEventListener("DOMContentLoaded", function() {
         };
     }
 
+    // Carrega SWF principal
     loadButton.addEventListener("click", () => {
         if (!mainSwfBuffer) { alert("Please select the main SWF first!"); return; }
 
