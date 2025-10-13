@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ruffle Game Loader Completo</title>
+<title>Ruffle Game Loader</title>
 <style>
 html, body { margin: 0; padding: 0; height: 100%; width: 100%; background: black; overflow: hidden; }
-#container { position: relative; display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; background-color: black; overflow: hidden; }
-#player { aspect-ratio: 16 / 9; height: 100%; max-height: 100vh; max-width: 100vw; pointer-events: auto; background: #000; position: relative; z-index: 5; }
+#container { position: relative; display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; background-color: black; overflow: hidden; flex-direction: column; }
+#player { aspect-ratio: 16 / 9; width: 100%; max-height: 80%; background: #000; position: relative; z-index: 5; }
 .border { position: absolute; z-index: 1; background-repeat: no-repeat; background-size: cover; background-position: center; }
 #left-border, #right-border { top: 0; width: calc((100vw - (100vh * 16 / 9)) / 2); height: 100vh; }
 #left-border { left: 0; background-image: url('RuffleAndroid/RuffleVKTextures/left_edge.png'); }
@@ -17,9 +17,9 @@ html, body { margin: 0; padding: 0; height: 100%; width: 100%; background: black
 #bottom-border { bottom: 0; background-image: url('RuffleAndroid/RuffleVKTextures/bottom_edge.png'); }
 @media (min-aspect-ratio: 16/9) { #top-border, #bottom-border { display: none; } }
 @media (max-aspect-ratio: 16/9) { #left-border, #right-border { display: none; } }
-#fileControls { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 10; color: white; display: flex; gap: 10px; }
+#fileControls { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+button, label { padding: 6px 12px; background: #333; color: white; border-radius: 4px; cursor: pointer; }
 input[type="file"] { display: none; }
-label.fileLabel { padding: 6px 12px; background: #333; color: white; border-radius: 4px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -33,8 +33,12 @@ label.fileLabel { padding: 6px 12px; background: #333; color: white; border-radi
     <div id="player"></div>
 
     <div id="fileControls">
-        <label class="fileLabel" for="filePicker">Select Game Folder</label>
-        <input type="file" id="filePicker" webkitdirectory multiple />
+        <label for="mainSwfPicker">Select Main SWF</label>
+        <input type="file" id="mainSwfPicker" accept=".swf" />
+        
+        <label for="complementaryPicker">Add Complementary Files</label>
+        <input type="file" id="complementaryPicker" multiple />
+
         <button id="loadSwf">Load SWF</button>
     </div>
 </div>
@@ -44,11 +48,15 @@ label.fileLabel { padding: 6px 12px; background: #333; color: white; border-radi
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const fileInput = document.getElementById("filePicker");
+    const mainSwfInput = document.getElementById("mainSwfPicker");
+    const compInput = document.getElementById("complementaryPicker");
     const loadButton = document.getElementById("loadSwf");
     const playerContainer = document.getElementById("player");
-    let filesMap = {}; // caminho relativo → ArrayBuffer
-    let blobCache = {}; // Cache de Blob URLs
+
+    let filesMap = {};   // nome → ArrayBuffer
+    let blobCache = {};  // nome → Blob URL
+    let mainSwfBuffer = null;
+    let mainSwfName = "";
 
     // Configuração do Ruffle
     window.RufflePlayer = window.RufflePlayer || {};
@@ -59,24 +67,30 @@ document.addEventListener("DOMContentLoaded", function() {
         playerRuntime: "flashPlayer",
         maxExecutionDuration: 120
     };
-
     const ruffle = window.RufflePlayer.newest();
     let rufflePlayer = ruffle.createPlayer();
     playerContainer.appendChild(rufflePlayer);
 
-    // Carrega todos os arquivos da pasta na memória
-    fileInput.addEventListener("change", async (e) => {
-        const files = Array.from(e.target.files);
-        filesMap = {};
-        blobCache = {};
-        for (const file of files) {
-            const arrayBuffer = await file.arrayBuffer();
-            filesMap[file.webkitRelativePath] = arrayBuffer;
-        }
-        alert("Arquivos carregados na memória: " + Object.keys(filesMap).length);
+    // Seleciona SWF principal
+    mainSwfInput.addEventListener("change", async (e) => {
+        if (e.target.files.length === 0) return;
+        const file = e.target.files[0];
+        mainSwfBuffer = await file.arrayBuffer();
+        mainSwfName = file.name;
+        alert(`Main SWF loaded: ${file.name}`);
     });
 
-    // Cria loader virtual que retorna Blob URL para qualquer arquivo carregado
+    // Seleciona arquivos complementares (pode repetir várias vezes)
+    compInput.addEventListener("change", async (e) => {
+        const files = Array.from(e.target.files);
+        for (const file of files) {
+            const arrayBuffer = await file.arrayBuffer();
+            filesMap[file.name] = arrayBuffer;
+        }
+        alert(`Complementary files added: ${files.length}`);
+    });
+
+    // Virtual loader para recursos do SWF
     function virtualLoader(path) {
         const key = Object.keys(filesMap).find(k => k.endsWith(path));
         if (!key) return null;
@@ -84,7 +98,7 @@ document.addEventListener("DOMContentLoaded", function() {
         return blobCache[key];
     }
 
-    // Monkey-patch do fetch para interceptar recursos carregados pelo SWF
+    // Monkey-patch do fetch para interceptar requisições
     function patchFetch() {
         const originalFetch = window.fetch;
         window.fetch = async function(resource, ...args) {
@@ -94,11 +108,10 @@ document.addEventListener("DOMContentLoaded", function() {
         };
     }
 
+    // Carrega o SWF principal
     loadButton.addEventListener("click", () => {
-        // Troque pelo nome do SWF principal, ex: "run.swf"
-        const mainSwfPath = Object.keys(filesMap).find(k => k.endsWith("run.swf"));
-        if (!mainSwfPath) {
-            alert("SWF principal não encontrado!");
+        if (!mainSwfBuffer) {
+            alert("Please select the main SWF first!");
             return;
         }
 
@@ -108,7 +121,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         patchFetch(); // ativa loader virtual
 
-        rufflePlayer.load(URL.createObjectURL(new Blob([filesMap[mainSwfPath]])));
+        rufflePlayer.load(URL.createObjectURL(new Blob([mainSwfBuffer])));
     });
 });
 </script>
