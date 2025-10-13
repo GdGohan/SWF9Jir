@@ -729,7 +729,7 @@
             imgDown:"RuffleAndroid/RuffleVKTextures/dpad_down.png",
             imgLeft:"RuffleAndroid/RuffleVKTextures/dpad_left.png",
             imgRight:"RuffleAndroid/RuffleVKTextures/dpad_right.png",
-            option:,
+            option:"",
             keys:{"ArrowUp":"W","ArrowDown":"S","ArrowLeft":"A","ArrowRight":"D"},
             keyName:"",
             keyCode:"",
