@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function() {
         allowScriptAccess: true,
         menu: false,
         logLevel: "warn",
-        playerRuntime: "flashPlayer",
+        playerRuntime: "air",
         maxExecutionDuration: 120
     };
     const ruffle = window.RufflePlayer.newest();
@@ -150,20 +150,25 @@ document.addEventListener("DOMContentLoaded", function() {
         alert(`Main SWF loaded: ${file.name}`);
     });
 
-    // Seleciona complementares
+    // Seleciona arquivos complementares
     compInput.addEventListener("change", async (e) => {
         const files = Array.from(e.target.files);
         for (const file of files) {
             const buffer = await file.arrayBuffer();
-            // Salva no filesMap com caminho exato que o SWF espera
-            filesMap[`data/${file.name}`] = buffer;
+            // Salva usando apenas o nome do arquivo, ignorando pastas
+            filesMap[file.name] = buffer;
         }
         alert(`Complementary files added: ${files.length}`);
     });
 
+    // Loader que funciona no Android e desktop
     function virtualLoader(path) {
-        const key = Object.keys(filesMap).find(k => k.endsWith(path));
+        // Pega apenas o nome do arquivo requisitado pelo SWF
+        const requestedName = path.split('/').pop();
+        const key = Object.keys(filesMap).find(k => k === requestedName);
         if (!key) return null;
+
+        // Cria Blob se ainda não existir
         if (!blobCache[key]) blobCache[key] = URL.createObjectURL(new Blob([filesMap[key]]));
         return blobCache[key];
     }
