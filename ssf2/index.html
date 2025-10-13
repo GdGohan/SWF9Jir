@@ -31,22 +31,43 @@ input[type="file"] { display: none; }
     align-items: center;
     margin-top: 60px; /* espaço para os botões no topo */
     position: relative;
+    width: 100%;
+    height: calc(100vh - 60px);
 }
 
-#player { 
-    width: 100%; 
-    height: 100%; 
-    max-height: 100%; 
-    background: #000; 
-    position: relative; 
-    z-index: 5; 
+#player {
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    position: relative;
+    z-index: 5;
 }
 
-.border { position: absolute; z-index: 1; background-repeat: no-repeat; background-size: cover; background-position: center; }
-#left-border, #right-border { top: 0; width: calc((100vw - (100vh * 16 / 9)) / 2); height: 100vh; }
+/* Bordas ajustadas para acompanhar o player */
+.border {
+    position: absolute;
+    z-index: 1;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+}
+
+#left-border, #right-border {
+    top: 0;
+    bottom: 0;
+    width: calc((100% - (16/9 * 100%)) / 2); /* ajusta horizontalmente ao player */
+}
+
 #left-border { left: 0; background-image: url('RuffleAndroid/RuffleVKTextures/left_edge.png'); }
 #right-border { right: 0; background-image: url('RuffleAndroid/RuffleVKTextures/right_edge.png'); }
-#top-border, #bottom-border { left: 0; width: 100vw; height: calc((100vh - (100vw * 9 / 16)) / 2); }
+
+#top-border, #bottom-border {
+    left: 0;
+    width: 100%;
+    height: calc((100% - (100% * 9 / 16)) / 2); /* ajusta verticalmente ao player */
+}
+
 #top-border { top: 0; background-image: url('RuffleAndroid/RuffleVKTextures/top_edge.png'); }
 #bottom-border { bottom: 0; background-image: url('RuffleAndroid/RuffleVKTextures/bottom_edge.png'); }
 @media (min-aspect-ratio: 16/9) { #top-border, #bottom-border { display: none; } }
@@ -152,3 +173,4 @@ document.addEventListener("DOMContentLoaded", function() {
 
 </body>
 </html>
+
