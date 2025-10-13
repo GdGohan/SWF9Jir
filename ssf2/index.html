@@ -8,12 +8,10 @@
 body, html {
     margin: 0;
     padding: 0;
-    height: 100%;
     width: 100%;
     background: black;
-    overflow: hidden; /* mantém sem scroll */
-    display: flex;
-    flex-direction: column;
+    /* Remover overflow hidden */
+    /* overflow: hidden; */
 }
 
 #fileControls {
@@ -24,19 +22,18 @@ body, html {
     padding: 10px;
     background: rgba(0,0,0,0.8);
     z-index: 10;
+    position: sticky; /* mantém no topo ao rolar */
+    top: 0;
 }
 
 #container {
-    flex: 1; /* ocupa todo o espaço restante abaixo dos botões */
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; /* força o player para o topo */
     position: relative;
     width: 100%;
+    margin-top: 10px; /* opcional, espaço abaixo dos botões */
 }
-
-button, label { padding: 12px 18px; background: #333; color: white; border-radius: 6px; cursor: pointer; font-size: 16px; }
-input[type="file"] { display: none; }
 
 #player {
     width: 100%;
@@ -47,7 +44,7 @@ input[type="file"] { display: none; }
     z-index: 5;
 }
 
-/* Bordas ajustadas para acompanhar o player */
+/* Bordas seguem o player */
 .border {
     position: absolute;
     z-index: 1;
@@ -59,7 +56,7 @@ input[type="file"] { display: none; }
 #left-border, #right-border {
     top: 0;
     bottom: 0;
-    width: calc((100% - (16/9 * 100%)) / 2); /* ajusta horizontalmente ao player */
+    width: calc((100% - (16/9 * 100%)) / 2);
 }
 
 #left-border { left: 0; background-image: url('RuffleAndroid/RuffleVKTextures/left_edge.png'); }
@@ -68,13 +65,18 @@ input[type="file"] { display: none; }
 #top-border, #bottom-border {
     left: 0;
     width: 100%;
-    height: calc((100% - (100% * 9 / 16)) / 2); /* ajusta verticalmente ao player */
+    height: calc((100% - (100% * 9 / 16)) / 2);
 }
 
 #top-border { top: 0; background-image: url('RuffleAndroid/RuffleVKTextures/top_edge.png'); }
 #bottom-border { bottom: 0; background-image: url('RuffleAndroid/RuffleVKTextures/bottom_edge.png'); }
+
 @media (min-aspect-ratio: 16/9) { #top-border, #bottom-border { display: none; } }
 @media (max-aspect-ratio: 16/9) { #left-border, #right-border { display: none; } }
+
+button, label { padding: 12px 18px; background: #333; color: white; border-radius: 6px; cursor: pointer; font-size: 16px; }
+input[type="file"] { display: none; }
+
 </style>
 </head>
 <body>
@@ -176,5 +178,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
 </body>
 </html>
+
 
 
