@@ -163,15 +163,19 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Loader que funciona no Android e desktop
     function virtualLoader(path) {
-        // Pega apenas o nome do arquivo requisitado pelo SWF
-        const requestedName = path.split('/').pop();
-        const key = Object.keys(filesMap).find(k => k === requestedName);
-        if (!key) return null;
-
-        // Cria Blob se ainda não existir
-        if (!blobCache[key]) blobCache[key] = URL.createObjectURL(new Blob([filesMap[key]]));
-        return blobCache[key];
+    if (typeof path !== "string") {
+        // Se for Request, pega a URL
+        if (path instanceof Request) path = path.url;
+        else return null; // ignora outros tipos
     }
+
+    const requestedName = path.split('/').pop();
+    const key = Object.keys(filesMap).find(k => k === requestedName);
+    if (!key) return null;
+
+    if (!blobCache[key]) blobCache[key] = URL.createObjectURL(new Blob([filesMap[key]]));
+    return blobCache[key];
+}
 
     function patchFetch() {
         const originalFetch = window.fetch;
@@ -199,3 +203,4 @@ document.addEventListener("DOMContentLoaded", function() {
 
 </body>
 </html>
+
