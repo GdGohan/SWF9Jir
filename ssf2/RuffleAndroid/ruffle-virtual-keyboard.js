@@ -699,10 +699,10 @@
             imgRight:"",
             option:2,
             keys:{},
-            keyName:"Space",
-            keyCode:"Space",
-            keyNumber:32,
-            x:570.167, y:142.333, w:88.103, h:82.6667
+            keyName:"P",
+            keyCode:"KeyP",
+            keyNumber:80,
+            x:607.834, y:65.9997, w:88.103, h:82.6667
           },
   {
             id:"btn1760143570703",
@@ -715,10 +715,10 @@
             imgRight:"",
             option:1,
             keys:{},
-            keyName:"Enter",
-            keyCode:"Enter",
-            keyNumber:13,
-            x:645.651, y:-3.12873, w:44.3333, h:31.1188
+            keyName:"Backspace",
+            keyCode:"Backspace",
+            keyNumber:8,
+            x:645.318, y:-2.12873, w:44.6666, h:35.7855
           },
   {
             id:"btn1760148907272",
@@ -729,12 +729,76 @@
             imgDown:"RuffleAndroid/RuffleVKTextures/dpad_down.png",
             imgLeft:"RuffleAndroid/RuffleVKTextures/dpad_left.png",
             imgRight:"RuffleAndroid/RuffleVKTextures/dpad_right.png",
-            option:"",
-            keys:{"ArrowUp":"ArrowUp","ArrowDown":"ArrowDown","ArrowLeft":"ArrowLeft","ArrowRight":"ArrowRight"},
+            option:,
+            keys:{"ArrowUp":"W","ArrowDown":"S","ArrowLeft":"A","ArrowRight":"D"},
             keyName:"",
             keyCode:"",
             keyNumber:0,
             x:46.5, y:123.667, w:116.333, h:107.667
+          },
+  {
+            id:"btn1760342628942",
+            type:"",
+            img:"RuffleAndroid/RuffleVKTextures/button_default.png",
+            img2:"RuffleAndroid/RuffleVKTextures/button_pressed.png",
+            imgUp:"",
+            imgDown:"",
+            imgLeft:"",
+            imgRight:"",
+            option:2,
+            keys:{},
+            keyName:"O",
+            keyCode:"KeyO",
+            keyNumber:79,
+            x:521, y:68.6667, w:87.3337, h:85.3337
+          },
+  {
+            id:"btn1760342680185",
+            type:"",
+            img:"RuffleAndroid/RuffleVKTextures/button_default.png",
+            img2:"RuffleAndroid/RuffleVKTextures/button_pressed.png",
+            imgUp:"",
+            imgDown:"",
+            imgLeft:"",
+            imgRight:"",
+            option:2,
+            keys:{},
+            keyName:"I",
+            keyCode:"KeyI",
+            keyNumber:73,
+            x:608, y:148.667, w:88.0001, h:81.6667
+          },
+  {
+            id:"btn1760342727942",
+            type:"",
+            img:"RuffleAndroid/RuffleVKTextures/button_default.png",
+            img2:"RuffleAndroid/RuffleVKTextures/button_pressed.png",
+            imgUp:"",
+            imgDown:"",
+            imgLeft:"",
+            imgRight:"",
+            option:2,
+            keys:{},
+            keyName:"U",
+            keyCode:"KeyU",
+            keyNumber:85,
+            x:522, y:150.667, w:87, h:80.3333
+          },
+  {
+            id:"btn1760342745017",
+            type:"",
+            img:"RuffleAndroid/RuffleVKTextures/button_default.png",
+            img2:"RuffleAndroid/RuffleVKTextures/button_pressed.png",
+            imgUp:"",
+            imgDown:"",
+            imgLeft:"",
+            imgRight:"",
+            option:2,
+            keys:{},
+            keyName:"Space",
+            keyCode:"Space",
+            keyNumber:32,
+            x:324, y:184.999, w:77.3333, h:73.3333
           }
 ];
             }
