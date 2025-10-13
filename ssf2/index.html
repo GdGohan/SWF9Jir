@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ruffle Game Loader Completo</title>
 <style>
 html, body { margin: 0; padding: 0; height: 100%; width: 100%; background: black; overflow: hidden; }
 #container { position: relative; display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; background-color: black; overflow: hidden; }
@@ -17,6 +18,8 @@ html, body { margin: 0; padding: 0; height: 100%; width: 100%; background: black
 @media (min-aspect-ratio: 16/9) { #top-border, #bottom-border { display: none; } }
 @media (max-aspect-ratio: 16/9) { #left-border, #right-border { display: none; } }
 #fileControls { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 10; color: white; display: flex; gap: 10px; }
+input[type="file"] { display: none; }
+label.fileLabel { padding: 6px 12px; background: #333; color: white; border-radius: 4px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -30,19 +33,24 @@ html, body { margin: 0; padding: 0; height: 100%; width: 100%; background: black
     <div id="player"></div>
 
     <div id="fileControls">
-       <!-- <button id="loadSwf">Load SWF</button> -->
+        <label class="fileLabel" for="filePicker">Select Game Folder</label>
+        <input type="file" id="filePicker" webkitdirectory multiple />
+        <button id="loadSwf">Load SWF</button>
     </div>
 </div>
-<script>
-window.onerror = function(message, source, lineno, colno, error) {
-    if (window.AndroidBridge && window.AndroidBridge.showError) {
-        window.AndroidBridge.showError(message + " at " + source + ":" + lineno);
-    }
-};
-</script>
+
 <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+<script src="RuffleAndroid/ruffle-virtual-keyboard.js"></script>
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    const fileInput = document.getElementById("filePicker");
+    const loadButton = document.getElementById("loadSwf");
+    const playerContainer = document.getElementById("player");
+    let filesMap = {}; // caminho relativo → ArrayBuffer
+    let blobCache = {}; // Cache de Blob URLs
+
+    // Configuração do Ruffle
     window.RufflePlayer = window.RufflePlayer || {};
     window.RufflePlayer.config = {
         allowScriptAccess: true,
@@ -51,73 +59,59 @@ document.addEventListener("DOMContentLoaded", function() {
         playerRuntime: "flashPlayer",
         maxExecutionDuration: 120
     };
-    var ruffle = window.RufflePlayer.newest();
-    var playerContainer = document.getElementById("player");
-    var rufflePlayer = ruffle.createPlayer();
+
+    const ruffle = window.RufflePlayer.newest();
+    let rufflePlayer = ruffle.createPlayer();
     playerContainer.appendChild(rufflePlayer);
-    rufflePlayer.style.width = "100%";
-    rufflePlayer.style.height = "100%";
-    rufflePlayer.tabIndex = -1;
-    const baseURL = "https://www.supersmashflash.com/flash/games/SSF2Beta_v";
-    rufflePlayer.load(baseURL + "1_4_0_1");
-    rufflePlayer.focus();
 
-    rufflePlayer.addEventListener("error", function(event) {
-        const message = event.message || "Error loading SWF";
-        if (window.AndroidBridge && window.AndroidBridge.showError) {
-            window.AndroidBridge.showError(message);
+    // Carrega todos os arquivos da pasta na memória
+    fileInput.addEventListener("change", async (e) => {
+        const files = Array.from(e.target.files);
+        filesMap = {};
+        blobCache = {};
+        for (const file of files) {
+            const arrayBuffer = await file.arrayBuffer();
+            filesMap[file.webkitRelativePath] = arrayBuffer;
         }
+        alert("Arquivos carregados na memória: " + Object.keys(filesMap).length);
     });
-    
-    window.playerType = function(type) {
-        if (!type) {
-            if (window.AndroidBridge && window.AndroidBridge.showError) {
-                window.AndroidBridge.showError("Invalid type.");
-            }
+
+    // Cria loader virtual que retorna Blob URL para qualquer arquivo carregado
+    function virtualLoader(path) {
+        const key = Object.keys(filesMap).find(k => k.endsWith(path));
+        if (!key) return null;
+        if (!blobCache[key]) blobCache[key] = URL.createObjectURL(new Blob([filesMap[key]]));
+        return blobCache[key];
+    }
+
+    // Monkey-patch do fetch para interceptar recursos carregados pelo SWF
+    function patchFetch() {
+        const originalFetch = window.fetch;
+        window.fetch = async function(resource, ...args) {
+            const url = virtualLoader(resource);
+            if (url) return originalFetch(url, ...args);
+            return originalFetch(resource, ...args);
+        };
+    }
+
+    loadButton.addEventListener("click", () => {
+        // Troque pelo nome do SWF principal, ex: "run.swf"
+        const mainSwfPath = Object.keys(filesMap).find(k => k.endsWith("run.swf"));
+        if (!mainSwfPath) {
+            alert("SWF principal não encontrado!");
             return;
         }
-        try {
-            window.RufflePlayer.config = {
-                playerRuntime: type
-            };
-        } catch (e) {
-            if (window.AndroidBridge && window.AndroidBridge.showError) {
-                window.AndroidBridge.showError("Error: " + e.message);
-            }
-        }
-    };
 
-    window.loadSwfFromServer = function(swfUrl) {
-        if (!swfUrl) {
-            if (window.AndroidBridge && window.AndroidBridge.showError) {
-                window.AndroidBridge.showError("SWF not specified.");
-            }
-            return;
-        }
-        playerContainer.innerHTML = ""; 
-        try {
-            ruffle = window.RufflePlayer.newest();
-            rufflePlayer = ruffle.createPlayer();
-            playerContainer.appendChild(rufflePlayer);
-            rufflePlayer.style.width = "100%";
-            rufflePlayer.style.height = "100%";
-            rufflePlayer.load(swfUrl); // apenas load(), não ruffle().load()
-            rufflePlayer.focus();
-        } catch (e) {
-            if (window.AndroidBridge && window.AndroidBridge.showError) {
-                window.AndroidBridge.showError("Failed to load SWF: " + e.message);
-            }
-        }
-    };
+        playerContainer.innerHTML = "";
+        rufflePlayer = ruffle.createPlayer();
+        playerContainer.appendChild(rufflePlayer);
 
-    document.getElementById("loadSwf").addEventListener("click", function() {
-        if (window.AndroidBridge && window.AndroidBridge.onSwfSelected) {
-            window.AndroidBridge.onSwfSelected("request_file");
-        }
+        patchFetch(); // ativa loader virtual
+
+        rufflePlayer.load(URL.createObjectURL(new Blob([filesMap[mainSwfPath]])));
     });
 });
 </script>
-<script src="RuffleAndroid/ruffle-virtual-keyboard.js"></script>
-</body>
 
+</body>
 </html>
