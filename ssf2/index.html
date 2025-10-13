@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html, body { margin: 0; padding: 0; height: 100%; width: 100%; background: black; overflow: hidden; }
+#container { position: relative; display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; background-color: black; overflow: hidden; }
+#player { aspect-ratio: 16 / 9; height: 100%; max-height: 100vh; max-width: 100vw; pointer-events: auto; background: #000; position: relative; z-index: 5; }
+.border { position: absolute; z-index: 1; background-repeat: no-repeat; background-size: cover; background-position: center; }
+#left-border, #right-border { top: 0; width: calc((100vw - (100vh * 16 / 9)) / 2); height: 100vh; }
+#left-border { left: 0; background-image: url('RuffleAndroid/RuffleVKTextures/left_edge.png'); }
+#right-border { right: 0; background-image: url('RuffleAndroid/RuffleVKTextures/right_edge.png'); }
+#top-border, #bottom-border { left: 0; width: 100vw; height: calc((100vh - (100vw * 9 / 16)) / 2); }
+#top-border { top: 0; background-image: url('RuffleAndroid/RuffleVKTextures/top_edge.png'); }
+#bottom-border { bottom: 0; background-image: url('RuffleAndroid/RuffleVKTextures/bottom_edge.png'); }
+@media (min-aspect-ratio: 16/9) { #top-border, #bottom-border { display: none; } }
+@media (max-aspect-ratio: 16/9) { #left-border, #right-border { display: none; } }
+#fileControls { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 10; color: white; display: flex; gap: 10px; }
+</style>
+</head>
+<body>
+
+<div id="container">
+    <div id="left-border" class="border"></div>
+    <div id="right-border" class="border"></div>
+    <div id="top-border" class="border"></div>
+    <div id="bottom-border" class="border"></div>
+
+    <div id="player"></div>
+
+    <div id="fileControls">
+        <button id="loadSwf">Load SWF</button>
+    </div>
+</div>
+<script>
+window.onerror = function(message, source, lineno, colno, error) {
+    if (window.AndroidBridge && window.AndroidBridge.showError) {
+        window.AndroidBridge.showError(message + " at " + source + ":" + lineno);
+    }
+};
+</script>
+<script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    window.RufflePlayer = window.RufflePlayer || {};
+    window.RufflePlayer.config = {
+        allowScriptAccess: true,
+        menu: false,
+        logLevel: "warn",
+        playerRuntime: "flashPlayer",
+        maxExecutionDuration: 120
+    };
+    var ruffle = window.RufflePlayer.newest();
+    var playerContainer = document.getElementById("player");
+    var rufflePlayer = ruffle.createPlayer();
+    playerContainer.appendChild(rufflePlayer);
+    rufflePlayer.style.width = "100%";
+    rufflePlayer.style.height = "100%";
+    rufflePlayer.tabIndex = -1;
+    const baseURL = "https://www.supersmashflash.com/flash/games/SSF2Beta_v";
+    rufflePlayer.load(baseURL + "1_4_0_1");
+    rufflePlayer.focus();
+
+    rufflePlayer.addEventListener("error", function(event) {
+        const message = event.message || "Error loading SWF";
+        if (window.AndroidBridge && window.AndroidBridge.showError) {
+            window.AndroidBridge.showError(message);
+        }
+    });
+    
+    window.playerType = function(type) {
+        if (!type) {
+            if (window.AndroidBridge && window.AndroidBridge.showError) {
+                window.AndroidBridge.showError("Invalid type.");
+            }
+            return;
+        }
+        try {
+            window.RufflePlayer.config = {
+                playerRuntime: type
+            };
+        } catch (e) {
+            if (window.AndroidBridge && window.AndroidBridge.showError) {
+                window.AndroidBridge.showError("Error: " + e.message);
+            }
+        }
+    };
+
+    window.loadSwfFromServer = function(swfUrl) {
+        if (!swfUrl) {
+            if (window.AndroidBridge && window.AndroidBridge.showError) {
+                window.AndroidBridge.showError("SWF not specified.");
+            }
+            return;
+        }
+        playerContainer.innerHTML = ""; 
+        try {
+            ruffle = window.RufflePlayer.newest();
+            rufflePlayer = ruffle.createPlayer();
+            playerContainer.appendChild(rufflePlayer);
+            rufflePlayer.style.width = "100%";
+            rufflePlayer.style.height = "100%";
+            rufflePlayer.load(swfUrl); // apenas load(), não ruffle().load()
+            rufflePlayer.focus();
+        } catch (e) {
+            if (window.AndroidBridge && window.AndroidBridge.showError) {
+                window.AndroidBridge.showError("Failed to load SWF: " + e.message);
+            }
+        }
+    };
+
+    document.getElementById("loadSwf").addEventListener("click", function() {
+        if (window.AndroidBridge && window.AndroidBridge.onSwfSelected) {
+            window.AndroidBridge.onSwfSelected("request_file");
+        }
+    });
+});
+</script>
+<script src="RuffleAndroid/ruffle-virtual-keyboard.js"></script>
+</body>
+</html>
